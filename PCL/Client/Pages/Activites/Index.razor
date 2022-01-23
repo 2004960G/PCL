@@ -1,0 +1,63 @@
+﻿@page "/activites/"
+@inject HttpClient _client
+@inject IJSRuntime js
+@attribute [Authorize]
+
+<h3>Make or join a activity</h3>
+
+@if (Activites == null)
+{
+    <div class="alert alert-info">Loading Activites...</div>
+}
+else
+{
+    <table class="table table-responsive">
+        <thead>
+            <tr>
+                <th>Activity Name</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var activity in Activites)
+            {
+                <tr>
+                    <td>@activity.Name</td>
+                    <td>
+                        <a href="/makes/view/@activity.Id" class="btn btn-primary">
+                            <span class="oi oi-book"></span>
+                        </a>
+                        <a href="/makes/edit/@activity.Id" class="btn btn-warning">
+                            <span class="oi oi-pencil"></span>
+                        </a>
+                        <button class="btn btn-danger" @onclick="@(()=>Delete(activity.Id))">
+                            <span class="oi oi-delete"></span>
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+
+@code {
+
+    private List<Activity> Activites;
+
+    protected async override Task OnInitializedAsync()
+    {
+        Activites = await _client.GetFromJsonAsync<List<Activity>>("api/activites");
+    }
+
+    async Task Delete(int activityId)
+    {
+        var activity = Activites.First(q => q.Id == activityId);
+        var confirm = await js.InvokeAsync<bool>("confirm", $"Do you want to delete {activity.Name}?");
+        if (confirm)
+        {
+            await _client.DeleteAsync($"api/activites/{activityId}");
+            await OnInitializedAsync();
+        }
+    }
+}
